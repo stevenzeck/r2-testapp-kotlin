@@ -7,9 +7,13 @@ import android.view.ViewGroup
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.work.*
 import com.google.android.material.snackbar.Snackbar
 import com.squareup.picasso.Picasso
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import org.readium.r2.shared.extensions.getPublicationOrNull
+import org.readium.r2.shared.extensions.putPublication
 import org.readium.r2.shared.publication.Publication
 import org.readium.r2.shared.publication.opds.images
 import org.readium.r2.testapp.MainActivity
@@ -61,14 +65,34 @@ class OpdsDetailFragment : Fragment() {
 
         binding.downloadButton.setOnClickListener {
             mPublication?.let { it1 ->
-                mCatalogViewModel.downloadPublication(
-                    it1
-                )
-                GlobalScope.launch {
-                    mCatalogViewModel.downloadPublication(
-                        it1
-                    )
-                }
+//                GlobalScope.launch {
+//                    mCatalogViewModel.downloadPublication(
+//                        it1
+//                    )
+//                }
+                val data = Data.Builder().putPublication(it1).build()
+                val uploadWorkRequest: WorkRequest =
+                    OneTimeWorkRequestBuilder<PublicationDownloadWorker>()
+                        .setInputData(data)
+                        .build()
+                WorkManager
+                    .getInstance(requireContext())
+                    .enqueue(uploadWorkRequest)
+                WorkManager.getInstance(requireContext()).getWorkInfoByIdLiveData(uploadWorkRequest.id)
+                    .observe(viewLifecycleOwner, { workInfo ->
+                        val message = when (workInfo.state) {
+                            WorkInfo.State.SUCCEEDED -> getString(R.string.import_publication_success)
+                            WorkInfo.State.FAILED -> getString(R.string.unable_add_pub_database)
+                            else -> null
+                        }
+                        if (message != null) {
+                            Snackbar.make(
+                                requireView(),
+                                message,
+                                Snackbar.LENGTH_LONG
+                            ).show()
+                        }
+                    })
             }
         }
     }
