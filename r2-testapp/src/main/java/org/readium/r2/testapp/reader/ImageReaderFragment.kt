@@ -55,7 +55,7 @@ class ImageReaderFragment : VisualReaderFragment(), ImageNavigatorFragment.Liste
         when {
             leftRange.contains(point.x) -> navigator.goBackward(animated = true)
             leftRange.contains(viewWidth - point.x) -> navigator.goForward(animated = true)
-            else -> requireActivity().toggleSystemUi()
+            else -> requireActivity().toggleSystemUi(requireView())
         }
 
         return true

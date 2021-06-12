@@ -7,39 +7,51 @@
 package org.readium.r2.testapp.utils
 
 import android.app.Activity
+import android.os.Build
 import android.view.View
 import android.view.WindowInsets
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 
 /** Returns `true` if fullscreen or immersive mode is not set. */
 private fun Activity.isSystemUiVisible(): Boolean {
     return this.window.decorView.systemUiVisibility and View.SYSTEM_UI_FLAG_FULLSCREEN == 0
 }
 
+@RequiresApi(Build.VERSION_CODES.R)
+private fun View.isSystemUiVisible(): Boolean {
+    return this.rootWindowInsets.isVisible(WindowInsetsCompat.Type.statusBars())
+}
+
 /** Enable fullscreen or immersive mode. */
 fun Activity.hideSystemUi() {
-    this.window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_IMMERSIVE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_FULLSCREEN
-            )
+    (this as AppCompatActivity).supportActionBar?.hide()
+    WindowInsetsControllerCompat(this.window, this.window.decorView).let { controller ->
+        controller.hide(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+    }
 }
 
 /** Disable fullscreen or immersive mode. */
 fun Activity.showSystemUi() {
-    this.window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            )
+    (this as AppCompatActivity).supportActionBar?.show()
+    WindowInsetsControllerCompat(
+        this.window,
+        this.window.decorView
+    ).show(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
 }
 
 /** Toggle fullscreen or immersive mode. */
-fun Activity.toggleSystemUi() {
-    if (this.isSystemUiVisible()) {
+fun Activity.toggleSystemUi(view: View) {
+    if (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            view.isSystemUiVisible()
+        } else {
+            this.isSystemUiVisible()
+        }
+    ) {
         this.hideSystemUi()
     } else {
         this.showSystemUi()

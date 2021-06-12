@@ -69,7 +69,7 @@ class PdfReaderFragment : VisualReaderFragment(), PdfNavigatorFragment.Listener 
         when {
             leftRange.contains(point.x) -> navigator.goBackward()
             leftRange.contains(viewWidth - point.x) -> navigator.goForward()
-            else -> requireActivity().toggleSystemUi()
+            else -> requireActivity().toggleSystemUi(requireView())
         }
 
         return true
